@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Sight AI</title>
+  <style>
+    :root {
+      --bg: #0B0F19;
+      --surface: #111827;
+      --surface-2: #19243A;
+      --border: #24334F;
+      --text: #F8FAFC;
+      --muted: #94A3B8;
+      --accent: #38BDF8;
+      --accent-soft: rgba(56, 189, 248, 0.14);
+      --danger: #EF4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      background: rgba(11, 15, 25, 0.96);
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      line-height: 1.15;
+    }
+
+    .brand-sub {
+      display: block;
+      font-size: 0.62rem;
+      color: var(--accent);
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .chip-btn, .timer-btn {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 6px 9px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .chip-btn.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .timer-btn.locked {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    #camStage {
+      display: none;
+      background: #060913;
+      border-bottom: 1px solid var(--border);
+      padding: 10px 14px;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    #camStage.open {
+      display: flex;
+    }
+
+    .cam-box {
+      width: 100%;
+      max-height: 210px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000;
+      border: 1px solid var(--border);
+    }
+
+    #camVideo {
+      width: 100%;
+      max-height: 210px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .cam-bar {
+      display: flex;
+      gap: 8px;
+    }
+
+    .cam-btn {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .cam-btn.snap {
+      background: var(--accent);
+      color: #06101E;
+      border: none;
+      font-weight: 700;
+    }
+
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .bubble {
+      max-width: 85%;
+      padding: 12px 15px;
+      border-radius: 16px;
+      font-size: 0.94rem;
+      line-height: 1.5;
+      word-wrap: break-word;
+      white-space: pre-line;
+    }
+
+    .bubble.ai {
+      align-self: flex-start;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+
+    .bubble.user {
+      align-self: flex-end;
+      background: #2563EB;
+      color: #FFFFFF;
+      border-bottom-right-radius: 4px;
+    }
+
+    .bubble img {
+      display: block;
+      max-width: 100%;
+      max-height: 160px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+    }
+
+    .status-line {
+      text-align: center;
+      font-size: 0.74rem;
+      color: var(--muted);
+      padding: 4px 12px;
+      min-height: 22px;
+    }
+
+    .composer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 10px 14px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .text-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    #promptBox {
+      flex: 1;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 11px 14px;
+      border-radius: 12px;
+      font-size: 0.92rem;
+      outline: none;
+    }
+
+    #promptBox:focus {
+      border-color: var(--accent);
+    }
+
+    #sendBtn {
+      background: var(--accent);
+      color: #06101E;
+      border: none;
+      padding: 11px 16px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+    }
+
+    #micBtn {
+      width: 100%;
+      padding: 13px 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(56, 189, 248, 0.55);
+      background: linear-gradient(135deg, #0284C7, #2563EB);
+      color: #FFFFFF;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    #micBtn.listening {
+      background: linear-gradient(135deg, #DC2626, #B91C1C);
+      border-color: #FCA5A5;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.78);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 50;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 360px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .modal-title { font-size: 1rem; font-weight: 700; }
+    .modal-desc { font-size: 0.82rem; color: var(--muted); line-height: 1.45; }
+
+    #apiKeyInput {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      outline: none;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 8px 13px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #06101E;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="brand">
+      <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Sight AI Logo">
+        <rect x="1.5" y="1.5" width="37" height="37" rx="11" fill="#131F36" stroke="#38BDF8" stroke-width="1.5"/>
+        <path d="M20 8.5V12.5M20 27.5V31.5M8.5 20H12.5M27.5 20H31.5" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round"/>
+        <circle cx="20" cy="20" r="6.8" stroke="#F8FAFC" stroke-width="1.6"/>
+        <circle cx="20" cy="20" r="2.4" fill="#38BDF8"/>
+      </svg>
+      <div>
+        <div class="brand-title">Sight AI</div>
+        <span class="brand-sub">Voice Co-Pilot</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="camToggle" class="chip-btn" type="button">📷 Cam</button>
+      <button id="keyBtn" class="chip-btn" type="button">🔑 Key</button>
+      <button id="voiceToggle" class="chip-btn active" type="button">🔊 Voice</button>
+      <button id="timerBtn" class="timer-btn" type="button">600s</button>
+    </div>
+  </header>
+
+  <section id="camStage">
+    <div class="cam-box">
+      <video id="camVideo" autoplay playsinline muted></video>
+      <canvas id="camCanvas" style="display:none;"></canvas>
+    </div>
+    <div class="cam-bar">
+      <button id="snapAskBtn" class="cam-btn snap" type="button">📸 Capture & Ask</button>
+      <button id="flipCamBtn" class="cam-btn" type="button">🔄 Flip</button>
+      <button id="closeCamBtn" class="cam-btn" type="button">✕ Off</button>
+    </div>
+  </section>
+
+  <main id="messages">
+    <div class="bubble ai">Hello. I am Sight AI. Ask anything by voice, text, or camera.</div>
+  </main>
+
+  <div class="status-line" id="statusLine">Ready</div>
+
+  <footer class="composer">
+    <div class="text-row">
+      <input id="promptBox" type="text" placeholder="Type a message..." autocomplete="off" />
+      <button id="sendBtn" type="button">Send</button>
+    </div>
+    <button id="micBtn" type="button">🎤 Tap to Speak</button>
+  </footer>
+
+  <div id="keyModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-title">Gemini API Key</div>
+      <div class="modal-desc">Saved locally in your browser on this device.</div>
+      <input id="apiKeyInput" type="password" placeholder="Paste Gemini API key (AIza...)" autocomplete="off" />
+      <div class="modal-actions">
+        <button id="cancelKeyBtn" class="btn-ghost" type="button">Cancel</button>
+        <button id="saveKeyBtn" class="btn-primary" type="button">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "sight_ai_gemini_key";
+    const MODEL_NAME = "gemini-3.8-flash";
+
+    let geminiApiKey = localStorage.getItem(STORAGE_KEY) || "";
+    let chatHistory = [];
+    let voiceEnabled = true;
+    let remainingSec = 600;
+    let running = false;
+    let lastActive = Date.now();
+    let voicesCache = [];
+    let camStream = null;
+    let facingMode = "environment";
+
+    const messagesEl = document.getElementById("messages");
+    const statusEl = document.getElementById("statusLine");
+    const inputEl = document.getElementById("promptBox");
+    const sendBtn = document.getElementById("sendBtn");
+    const micBtn = document.getElementById("micBtn");
+    const voiceToggle = document.getElementById("voiceToggle");
+    const timerBtn = document.getElementById("timerBtn");
+    const keyBtn = document.getElementById("keyBtn");
+    const keyModal = document.getElementById("keyModal");
+    const apiKeyInput = document.getElementById("apiKeyInput");
+    const cancelKeyBtn = document.getElementById("cancelKeyBtn");
+    const saveKeyBtn = document.getElementById("saveKeyBtn");
+
+    const camToggle = document.getElementById("camToggle");
+    const camStage = document.getElementById("camStage");
+    const camVideo = document.getElementById("camVideo");
+    const camCanvas = document.getElementById("camCanvas");
+    const snapAskBtn = document.getElementById("snapAskBtn");
+    const flipCamBtn = document.getElementById("flipCamBtn");
+    const closeCamBtn = document.getElementById("closeCamBtn");
+
+    function updateKeyBadge() {
+      keyBtn.classList.toggle("active", Boolean(geminiApiKey));
+      keyBtn.textContent = geminiApiKey ? "🔑 Key ✓" : "🔑 Key";
+    }
+    updateKeyBadge();
+
+    keyBtn.addEventListener("click", () => {
+      apiKeyInput.value = geminiApiKey;
+      keyModal.classList.add("open");
+    });
+
+    cancelKeyBtn.addEventListener("click", () => {
+      keyModal.classList.remove("open");
+    });
+
+    saveKeyBtn.addEventListener("click", () => {
+      geminiApiKey = apiKeyInput.value.trim();
+      if (geminiApiKey) {
+        localStorage.setItem(STORAGE_KEY, geminiApiKey);
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+      updateKeyBadge();
+      keyModal.classList.remove("open");
+      statusEl.textContent = geminiApiKey ? "Gemini API key saved" : "No API key set";
+    });
+
+    function stopCamera() {
+      if (camStream) {
+        camStream.getTracks().forEach(t => t.stop());
+        camStream = null;
+      }
+      camVideo.srcObject = null;
+      camStage.classList.remove("open");
+      camToggle.classList.remove("active");
+    }
+
+    async function startCamera() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        statusEl.textContent = "Camera not supported on this browser";
+        return;
+      }
+      stopCamera();
+      try {
+        camStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode },
+          audio: false
+        });
+        camVideo.srcObject = camStream;
+        camStage.classList.add("open");
+        camToggle.classList.add("active");
+        statusEl.textContent = "Camera live";
+      } catch (err) {
+        statusEl.textContent =
+          window.location.protocol !== "https:"
+            ? "Open on HTTPS to use camera"
+            : `Camera error: ${err.message}`;
+      }
+    }
+
+    camToggle.addEventListener("click", () => {
+      if (camStream) {
+        stopCamera();
+        statusEl.textContent = "Ready";
+      } else {
+        startCamera();
+      }
+    });
+
+    closeCamBtn.addEventListener("click", () => {
+      stopCamera();
+      statusEl.textContent = "Ready";
+    });
+
+    flipCamBtn.addEventListener("click", () => {
+      facingMode = facingMode === "environment" ? "user" : "environment";
+      if (camStream) startCamera();
+    });
+
+    function captureFrame() {
+      if (!camStream || !camVideo.videoWidth || !camVideo.videoHeight) return null;
+      const maxW = 640;
+      const scale = Math.min(1, maxW / camVideo.videoWidth);
+      camCanvas.width = Math.round(camVideo.videoWidth * scale);
+      camCanvas.height = Math.round(camVideo.videoHeight * scale);
+      const ctx = camCanvas.getContext("2d");
+      ctx.drawImage(camVideo, 0, 0, camCanvas.width, camCanvas.height);
+      return camCanvas.toDataURL("image/jpeg", 0.72);
+    }
+
+    function loadVoicesList() {
+      if ("speechSynthesis" in window) {
+        voicesCache = window.speechSynthesis.getVoices();
+      }
+    }
+    loadVoicesList();
+    if ("speechSynthesis" in window && window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoicesList;
+    }
+
+    function pickVoice(text) {
+      if (!voicesCache.length) loadVoicesList();
+      const hasHindi = /[\u0900-\u097F]/.test(text);
+      if (hasHindi) {
+        const hi =
+          voicesCache.find(v => v.lang.toLowerCase().startsWith("hi") && /google|natural|neural/i.test(v.name)) ||
+          voicesCache.find(v => v.lang.toLowerCase().startsWith("hi"));
+        return { voice: hi || null, lang: "hi-IN", rate: 0.96 };
+      }
+      const en =
+        voicesCache.find(v => v.lang.toLowerCase() === "en-in" && /google|natural|neural/i.test(v.name)) ||
+        voicesCache.find(v => v.lang.toLowerCase() === "en-in") ||
+        voicesCache.find(v => v.lang.toLowerCase().startsWith("en"));
+      return { voice: en || null, lang: (en && en.lang) || "en-IN", rate: 1.0 };
+    }
+
+    function speakText(text) {
+      if (!voiceEnabled || !("speechSynthesis" in window)) return;
+      window.speechSynthesis.cancel();
+      const clean = String(text).trim();
+      if (!clean) return;
+      const utter = new SpeechSynthesisUtterance(clean);
+      const prof = pickVoice(clean);
+      if (prof.voice) utter.voice = prof.voice;
+      utter.lang = prof.lang;
+      utter.rate = prof.rate;
+      utter.onstart = () => { statusEl.textContent = "Speaking..."; };
+      utter.onend = () => { statusEl.textContent = "Ready"; };
+      utter.onerror = () => { statusEl.textContent = "Ready"; };
+      window.speechSynthesis.speak(utter);
+    }
+
+    voiceToggle.addEventListener("click", () => {
+      voiceEnabled = !voiceEnabled;
+      voiceToggle.textContent = voiceEnabled ? "🔊 Voice" : "🔇 Muted";
+      voiceToggle.classList.toggle("active", voiceEnabled);
+      if (!voiceEnabled && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    });
+
+    timerBtn.addEventListener("click", () => {
+      if (!running && remainingSec > 0) {
+        remainingSec = remainingSec === 600 ? 3600 : 600;
+        timerBtn.textContent = `${remainingSec}s`;
+      }
+    });
+
+    setInterval(() => {
+      if (!running) return;
+      if (Date.now() - lastActive > 180000) {
+        running = false;
+        statusEl.textContent = "Paused after 3 minutes of inactivity";
+        return;
+      }
+      if (remainingSec > 0) {
+        remainingSec--;
+        timerBtn.textContent = `${remainingSec}s`;
+        if (remainingSec === 0) {
+          running = false;
+          timerBtn.classList.add("locked");
+          statusEl.textContent = "Session ended (0s)";
+        }
+      }
+    }, 1000);
+
+    function addUserMessage(text, imageDataUrl = null) {
+      const div = document.createElement("div");
+      div.className = "bubble user";
+      if (imageDataUrl) {
+        const img = document.createElement("img");
+        img.src = imageDataUrl;
+        img.alt = "Captured view";
+        div.appendChild(img);
+      }
+      if (text) {
+        const span = document.createElement("div");
+        span.textContent = text;
+        div.appendChild(span);
+      }
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function addAiMessage(text) {
+      const div = document.createElement("div");
+      div.className = "bubble ai";
+      div.textContent = text;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    async function callGemini(prompt, imageDataUrl = null) {
+      const low = prompt.toLowerCase();
+      if (
+        !imageDataUrl &&
+        (low.includes("who built sight ai") ||
+          low.includes("kisne banaya") ||
+          low.includes("who is your founder") ||
+          low.includes("who is your creator"))
+      ) {
+        return "Sight AI was built by Vivek Katoch.";
+      }
+
+      if (!geminiApiKey) {
+        return "Tap Key at the top to add your Gemini API key.";
+      }
+
+      const parts = [];
+      if (imageDataUrl) {
+        parts.push({
+          inlineData: {
+            mimeType: "image/jpeg",
+            data: imageDataUrl.split(",")[1]
+          }
+        });
+      }
+      parts.push({ text: prompt });
+
+      const contents = [...chatHistory.slice(-8), { role: "user", parts }];
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${encodeURIComponent(geminiApiKey)}`;
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{
+              text: "You are Sight AI, a concise, helpful voice-first co-pilot built by Vivek Katoch. Give clear, natural answers suitable for voice playback."
+            }]
+          },
+          contents
+        })
+      });
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        const msg = errBody.error && errBody.error.message ? errBody.error.message : `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+
+      const data = await res.json();
+      const reply =
+        data.candidates &&
+        data.candidates[0] &&
+        data.candidates[0].content &&
+        data.candidates[0].content.parts &&
+        data.candidates[0].content.parts[0] &&
+        data.candidates[0].content.parts[0].text
+          ? data.candidates[0].content.parts[0].text.trim()
+          : "No response received.";
+
+      if (!imageDataUrl) {
+        chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+        chatHistory.push({ role: "model", parts: [{ text: reply }] });
+      }
+      return reply;
+    }
+
+    async function handleSend(raw, imageDataUrl = null) {
+      const text = raw.trim() || (imageDataUrl ? "What do you see in this camera frame? Answer briefly." : "");
+      if (!text) return;
+      if (remainingSec <= 0) {
+        statusEl.textContent = "Session ended (0s)";
+        return;
+      }
+
+      lastActive = Date.now();
+      running = true;
+      addUserMessage(text, imageDataUrl);
+      inputEl.value = "";
+      statusEl.textContent = imageDataUrl ? "Inspecti
